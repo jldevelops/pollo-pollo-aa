@@ -84,6 +84,7 @@
 						state: `{
                             if(var[trigger.data.return||'_asset'] == 'base')
                                 var['user_bytes'] -= var[trigger.data.return||'_amount'];
+                            var['leftover_bytes_'||var[trigger.data.return||'_donor']] = false;
 							var[trigger.data.return||'_amount'] = false;
                             var[trigger.data.return||'_receiver'] = false;
                             var[trigger.data.return||'_amount_r'] = false;
