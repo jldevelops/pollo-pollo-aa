@@ -87,7 +87,6 @@
                                 var['user_bytes'] -= var['leftover_bytes_'||var[trigger.data.return||'_donor']];
                             var['leftover_bytes_'||var[trigger.data.return||'_donor']] = false;
 							var[trigger.data.return||'_amount'] = false;
-                            var[trigger.data.return||'_receiver'] = false;
                             var[trigger.data.return||'_amount_r'] = false;
                             var[trigger.data.return||'_producer'] = false;
                             var[trigger.data.return||'_donor'] = false;
@@ -156,7 +155,7 @@
                     trigger.data.confirm and $polloAddr() == trigger.address
 				}`,
                 init: `{
-                        if(!var[trigger.data.confirm||'_receiver'])
+                        if(!var[trigger.data.confirm||'_producer'])
                             bounce('application not found');
                         if(var[trigger.data.confirm||'_amount_r'])
                             bounce('not filled yet');
