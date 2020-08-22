@@ -5,6 +5,8 @@
     }`,
     init: `{
         $timespan = 2600000;
+        if(is_aa(trigger.address))
+            bounce('no');
         if(trigger.output[[asset!=base]].asset != 'none'){
             $asset = trigger.output[[asset!=base]].asset;
             if($asset and $asset != $stableAsset()) 
@@ -84,6 +86,8 @@
 						state: `{
                             if(var[trigger.data.return||'_asset'] == 'base')
                                 var['user_bytes'] -= var[trigger.data.return||'_amount'];
+                            else
+                                var['user_bytes'] -= var['leftover_bytes_'||var[trigger.data.return||'_donor']];
                             var['leftover_bytes_'||var[trigger.data.return||'_donor']] = false;
 							var[trigger.data.return||'_amount'] = false;
                             var[trigger.data.return||'_receiver'] = false;
@@ -107,14 +111,18 @@
                         }
                         if($polloAddr() != trigger.address){
                             $donor = trigger.address;
-                            if(!var['donation_'||trigger.address])
+                            if(var[trigger.data.donate||'_asset'] == 'base' AND !var['donation_'||trigger.address])
+                                bounce('you dont have funds to donate');
+                            if(var[trigger.data.donate||'_asset'] != 'base' AND !var['donationsc_'||trigger.address])
                                 bounce('you dont have funds to donate');
                         }
                         else{
                             $donor = trigger.data.donor;
                             if(!$donor)
                                 bounce('donor missing');
-                            if(!var['donation_'||$donor])
+                            if(var[trigger.data.donate||'_asset'] == 'base' and !var['donation_'||$donor])
+                                bounce('donor dont have funds to donate');
+                            if(var[trigger.data.donate||'_asset'] != 'base' and !var['donationsc_'||$donor])
                                 bounce('donor dont have funds to donate');
                         }
                         if(var[trigger.data.confirm||'_asset'] == 'base'){
@@ -199,7 +207,10 @@
 					{
 						app: 'state',
 						state: `{
-                            var['user_bytes'] -= var[trigger.data.confirm||'_amount'];
+                            if(var[trigger.data.confirm||'_asset'] == 'base')
+                                var['user_bytes'] -=  var[trigger.data.confirm||'_amount'];
+                            else
+                                var['user_bytes'] -=  var['leftover_bytes_'||var[trigger.data.confirm||'_donor']];
                             var['leftover_bytes_'||var[trigger.data.confirm||'_donor']] = false;
                             var[trigger.data.confirm||'_asset'] = false;
 							var[trigger.data.confirm||'_amount'] = false;
@@ -221,13 +232,13 @@
 					app: 'state',
 					state: `{
                         if($asset == 'base'){
-                            var['user_bytes'] += trigger.output[[asset=base]];
                             var['donation_'||$donor] += trigger.output[[asset=base]];
                         }
                         else{
                             var['donationsc_'||$donor] += trigger.output[[asset!=base]];
                             var['leftover_bytes_'||$donor] += trigger.output[[asset=base]];
                         }
+                        var['user_bytes'] += trigger.output[[asset=base]];
 					}`
 				}]
 			}
