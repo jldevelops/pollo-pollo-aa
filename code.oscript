@@ -5,8 +5,6 @@
     }`,
     init: `{
         $timespan = 2600000;
-        if(is_aa(trigger.address))
-            bounce('no');
         if(trigger.output[[asset!=base]].asset != 'none'){
             $asset = trigger.output[[asset!=base]].asset;
             if($asset and $asset != $stableAsset()) 
@@ -25,7 +23,6 @@
 					{
 						app: 'state',
 						state: `{
-							var[trigger.unit||'_receiver'] = trigger.data.receiver;
                             var[trigger.unit||'_producer'] = trigger.data.producer;
                             var[trigger.unit||'_amount_r'] = trigger.data.amount;
                             if(trigger.data.stable)
@@ -61,7 +58,7 @@
                     trigger.data.return
 				}`,
                 init: `{
-                        if(!var[trigger.data.return||'_receiver'])
+                        if(!var[trigger.data.return||'_producer'])
                             bounce('application not found');
                         if(!var[trigger.data.return||'_donor'])
                             bounce('not filled');
@@ -156,15 +153,13 @@
 			},
             {
 				if: `{
-                    trigger.data.confirm
+                    trigger.data.confirm and $polloAddr() == trigger.address
 				}`,
                 init: `{
                         if(!var[trigger.data.confirm||'_receiver'])
                             bounce('application not found');
                         if(var[trigger.data.confirm||'_amount_r'])
                             bounce('not filled yet');
-                        if(var[trigger.data.confirm||'_receiver'] != trigger.address)
-                            bounce('you are not receiver');
                 }`,
 				messages: [
                     {
@@ -192,18 +187,6 @@
                             ]
                         }
                     },
-                    {
-                        "app": "payment",
-                        "payload": {
-                            "asset": 'base',
-                            "outputs": [
-                                {
-                                    "address": "{trigger.address}",
-                                    "amount": "{10000}"
-                                }
-                            ]
-                        }
-                    },
 					{
 						app: 'state',
 						state: `{
@@ -214,7 +197,6 @@
                             var['leftover_bytes_'||var[trigger.data.confirm||'_donor']] = false;
                             var[trigger.data.confirm||'_asset'] = false;
 							var[trigger.data.confirm||'_amount'] = false;
-                            var[trigger.data.confirm||'_receiver'] = false;
                             var[trigger.data.confirm||'_amount_r'] = false;
                             var[trigger.data.confirm||'_producer'] = false;
                             var[trigger.data.confirm||'_time'] = false;
