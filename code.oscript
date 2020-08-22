@@ -1,0 +1,235 @@
+{
+    getters: `{
+        $polloAddr = => '';
+        $stableAsset = => '';
+    }`,
+    init: `{
+        $timespan = 2600000;
+        if(trigger.output[[asset!=base]].asset != 'none'){
+            $asset = trigger.output[[asset!=base]].asset;
+            if($asset and $asset != $stableAsset()) 
+                bounce('only bytes or stable asset');
+        }
+        else
+            $asset = 'base';
+    }`,
+	messages: {
+		cases: [
+			{
+				if: `{
+                    trigger.data.create and $polloAddr() == trigger.address
+				}`,
+				messages: [
+					{
+						app: 'state',
+						state: `{
+							var[trigger.unit||'_receiver'] = trigger.data.receiver;
+                            var[trigger.unit||'_producer'] = trigger.data.producer;
+                            var[trigger.unit||'_amount_r'] = trigger.data.amount;
+                            if(trigger.data.stable)
+                                var[trigger.unit||'_asset'] = $stableAsset();
+                            else
+                                var[trigger.unit||'_asset'] = 'base';
+                            var[trigger.unit||'_amount_r'] = trigger.data.amount;
+						}`
+					}
+				]
+			},
+            {
+				if: `{
+                    trigger.data.withdraw and $polloAddr() == trigger.address
+				}`,
+				messages: [
+					{
+                        "app": "payment",
+                        "payload": {
+                            "asset": 'base',
+                            "outputs": [
+                                {
+                                    "address": "{trigger.address}",
+                                    "amount": "{balance[base] - storage_size - var['user_bytes'] - 20000}"
+                                }
+                            ]
+                        }
+                    }
+				]
+			},
+            {
+				if: `{
+                    trigger.data.return
+				}`,
+                init: `{
+                        if(!var[trigger.data.return||'_receiver'])
+                            bounce('application not found');
+                        if(!var[trigger.data.return||'_donor'])
+                            bounce('not filled');
+                        if(var[trigger.data.return||'_time']+$timespan < timestamp)
+                            bounce('you must wait 30 days before return');
+                }`,
+				messages: [
+                    {
+                        "app": "payment",
+                        "payload": {
+                            "asset": "{var[trigger.data.return||'_asset']}",
+                            "outputs": [
+                                {
+                                    "address": "{var[trigger.data.return||'_donor']}",
+                                    "amount": "{var[trigger.data.return||'_amount']}"
+                                }
+                            ]
+                        }
+                    },
+					{
+						app: 'state',
+						state: `{
+                            if(var[trigger.data.return||'_asset'] == 'base')
+                                var['user_bytes'] -= var[trigger.data.return||'_amount'];
+							var[trigger.data.return||'_amount'] = false;
+                            var[trigger.data.return||'_receiver'] = false;
+                            var[trigger.data.return||'_amount_r'] = false;
+                            var[trigger.data.return||'_producer'] = false;
+                            var[trigger.data.return||'_donor'] = false;
+                            var[trigger.data.return||'_time'] = false;
+                            var[trigger.data.return||'_asset'] = false;
+						}`
+					}
+				]
+			},
+            {
+				if: `{
+                    trigger.data.donate
+				}`,
+                init: `{
+                        
+                        if(!var[trigger.data.donate||'_amount_r']){
+                            bounce('application already filled');
+                        }
+                        if($polloAddr() != trigger.address){
+                            $donor = trigger.address;
+                            if(!var['donation_'||trigger.address])
+                                bounce('you dont have funds to donate');
+                        }
+                        else{
+                            $donor = trigger.data.donor;
+                            if(!$donor)
+                                bounce('donor missing');
+                            if(!var['donation_'||$donor])
+                                bounce('donor dont have funds to donate');
+                        }
+                        if(var[trigger.data.confirm||'_asset'] == 'base'){
+                            if(var[trigger.data.donate||'_amount_r'] > var['donation_'||$donor])
+                                bounce('not enough funds, please refill');
+                        }
+                        else{
+                            if(var[trigger.data.donate||'_amount_r'] > var['donationsc_'||$donor])
+                                bounce('not enough funds, please refill');
+                        }
+                        
+
+                }`,
+				messages: [
+					{
+						app: 'state',
+						state: `{
+                            if(var[trigger.data.confirm||'_asset'] == 'base'){
+                                var['donation_'||$donor] -= var[trigger.data.donate||'_amount_r'];
+                            }
+                            else{
+                                var['donationsc_'||$donor] -= var[trigger.data.donate||'_amount_r'];
+                            }
+                            var[trigger.data.donate||'_amount'] = var[trigger.data.donate||'_amount_r'];
+                            var[trigger.data.donate||'_amount_r'] = false;
+                            var[trigger.data.donate||'_donor'] = $donor;
+                            var[trigger.data.donate||'_time'] = timestamp;
+						}`
+					}
+				]
+			},
+            {
+				if: `{
+                    trigger.data.confirm
+				}`,
+                init: `{
+                        if(!var[trigger.data.confirm||'_receiver'])
+                            bounce('application not found');
+                        if(var[trigger.data.confirm||'_amount_r'])
+                            bounce('not filled yet');
+                        if(var[trigger.data.confirm||'_receiver'] != trigger.address)
+                            bounce('you are not receiver');
+                }`,
+				messages: [
+                    {
+                        "app": "payment",
+                        "payload": {
+                            "asset": `{var[trigger.data.confirm||'_asset']}`,
+                            "outputs": [
+                                {
+                                    "address": "{var[trigger.data.confirm||'_producer']}",
+                                    "amount": "{var[trigger.data.confirm||'_amount']}"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        if: `{var['leftover_bytes_'||var[trigger.data.confirm||'_donor']]}`,
+                        "app": "payment",
+                        "payload": {
+                            "asset": 'base',
+                            "outputs": [
+                                {
+                                    "address": "{var[trigger.data.confirm||'_donor']}",
+                                    "amount": "{var['leftover_bytes_'||var[trigger.data.confirm||'_donor']]}"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "app": "payment",
+                        "payload": {
+                            "asset": 'base',
+                            "outputs": [
+                                {
+                                    "address": "{trigger.address}",
+                                    "amount": "{10000}"
+                                }
+                            ]
+                        }
+                    },
+					{
+						app: 'state',
+						state: `{
+                            var['user_bytes'] -= var[trigger.data.confirm||'_amount'];
+                            var['leftover_bytes_'||var[trigger.data.confirm||'_donor']] = false;
+                            var[trigger.data.confirm||'_asset'] = false;
+							var[trigger.data.confirm||'_amount'] = false;
+                            var[trigger.data.confirm||'_receiver'] = false;
+                            var[trigger.data.confirm||'_amount_r'] = false;
+                            var[trigger.data.confirm||'_producer'] = false;
+                            var[trigger.data.confirm||'_time'] = false;
+						}`
+					}
+				]
+			},
+			{ 
+                init: `{
+                    $donor = trigger.data.donor OTHERWISE trigger.address;
+                    if(!is_valid_address($donor))
+                        bounce('donor param not valid');
+                }`,
+				messages: [{
+					app: 'state',
+					state: `{
+                        if($asset == 'base'){
+                            var['user_bytes'] += trigger.output[[asset=base]];
+                            var['donation_'||$donor] += trigger.output[[asset=base]];
+                        }
+                        else{
+                            var['donationsc_'||$donor] += trigger.output[[asset!=base]];
+                            var['leftover_bytes_'||$donor] += trigger.output[[asset=base]];
+                        }
+					}`
+				}]
+			}
+		]
+	}
+}
