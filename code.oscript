@@ -30,7 +30,6 @@
                                 var[trigger.unit||'_asset'] = $stableAsset();
                             else
                                 var[trigger.unit||'_asset'] = 'base';
-                            var[trigger.unit||'_amount_r'] = trigger.data.amount;
 						}`
 					}
 				]
@@ -61,10 +60,10 @@
                 init: `{
                         if(!var[trigger.data.return||'_producer'])
                             bounce('application not found');
-                        if(trigger.address != $polloAddr() and var[trigger.data.return||'_donor'] != trigger.address)
-                            bounce('not your order');
                         if(!var[trigger.data.return||'_donor'])
                             bounce('not filled');
+                        if(trigger.address != $polloAddr() and var[trigger.data.return||'_donor'] != trigger.address)
+                            bounce('not your order');
                         if(var[trigger.data.return||'_time']+$timespan < timestamp)
                             bounce('you must wait 30 days before return');
                         if(var[trigger.data.return||'_time']+$year > timestamp){
@@ -98,17 +97,17 @@
                             }
                             else{
                                 if(var[trigger.data.return||'_asset'] == 'base'){
-                                    var['donation_'||var[trigger.data.return||'_donor']] -= var[trigger.data.return||'_amount_r'];
-                                    var['donation_'||$polloAddr()] += var[trigger.data.return||'_amount_r'];
+                                    var['donation_'||var[trigger.data.return||'_donor']] -= var[trigger.data.return||'_amount'];
+                                    var['donation_'||$polloAddr()] += var[trigger.data.return||'_amount'];
                                 }
                                 else{
-                                    var['donationsc_'||var[trigger.data.return||'_donor']] -= var[trigger.data.return||'_amount_r'];
-                                    var['donationsc_'||$polloAddr()] += var[trigger.data.return||'_amount_r'];
+                                    var['donationsc_'||var[trigger.data.return||'_donor']] -= var[trigger.data.return||'_amount'];
+                                    var['donationsc_'||$polloAddr()] += var[trigger.data.return||'_amount'];
+                                    var['user_bytes'] -= var['leftover_bytes_'||var[trigger.data.return||'_donor']];
                                 }
                             }
                             var['leftover_bytes_'||var[trigger.data.return||'_donor']] = false;
 							var[trigger.data.return||'_amount'] = false;
-                            var[trigger.data.return||'_amount_r'] = false;
                             var[trigger.data.return||'_producer'] = false;
                             var[trigger.data.return||'_donor'] = false;
                             var[trigger.data.return||'_time'] = false;
