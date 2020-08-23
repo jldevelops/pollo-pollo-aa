@@ -5,6 +5,7 @@
     }`,
     init: `{
         $timespan = 2600000;
+        $year = 24*60*60*365;
         if(trigger.output[[asset!=base]].asset != 'none'){
             $asset = trigger.output[[asset!=base]].asset;
             if($asset and $asset != $stableAsset()) 
@@ -60,13 +61,21 @@
                 init: `{
                         if(!var[trigger.data.return||'_producer'])
                             bounce('application not found');
+                        if(trigger.address != $polloAddr() and var[trigger.data.return||'_donor'] != trigger.address)
+                            bounce('not your order');
                         if(!var[trigger.data.return||'_donor'])
                             bounce('not filled');
                         if(var[trigger.data.return||'_time']+$timespan < timestamp)
                             bounce('you must wait 30 days before return');
+                        if(var[trigger.data.return||'_time']+$year > timestamp){
+                            $to_aa = true;
+                        }
+                        if(var[trigger.data.return||'_donor'] == $polloAddr())
+                            $to_aa = true;
                 }`,
 				messages: [
                     {
+                        if: `{!$to_aa}`,
                         "app": "payment",
                         "payload": {
                             "asset": "{var[trigger.data.return||'_asset']}",
@@ -81,10 +90,22 @@
 					{
 						app: 'state',
 						state: `{
-                            if(var[trigger.data.return||'_asset'] == 'base')
-                                var['user_bytes'] -= var[trigger.data.return||'_amount'];
-                            else
-                                var['user_bytes'] -= var['leftover_bytes_'||var[trigger.data.return||'_donor']];
+                            if(!$to_aa){
+                                if(var[trigger.data.return||'_asset'] == 'base')
+                                    var['user_bytes'] -= var[trigger.data.return||'_amount'];
+                                else
+                                    var['user_bytes'] -= var['leftover_bytes_'||var[trigger.data.return||'_donor']];
+                            }
+                            else{
+                                if(var[trigger.data.return||'_asset'] == 'base'){
+                                    var['donation_'||var[trigger.data.return||'_donor']] -= var[trigger.data.return||'_amount_r'];
+                                    var['donation_'||$polloAddr()] += var[trigger.data.return||'_amount_r'];
+                                }
+                                else{
+                                    var['donationsc_'||var[trigger.data.return||'_donor']] -= var[trigger.data.return||'_amount_r'];
+                                    var['donationsc_'||$polloAddr()] += var[trigger.data.return||'_amount_r'];
+                                }
+                            }
                             var['leftover_bytes_'||var[trigger.data.return||'_donor']] = false;
 							var[trigger.data.return||'_amount'] = false;
                             var[trigger.data.return||'_amount_r'] = false;
@@ -121,7 +142,7 @@
                             if(var[trigger.data.donate||'_asset'] != 'base' and !var['donationsc_'||$donor])
                                 bounce('donor dont have funds to donate');
                         }
-                        if(var[trigger.data.confirm||'_asset'] == 'base'){
+                        if(var[trigger.data.donate||'_asset'] == 'base'){
                             if(var[trigger.data.donate||'_amount_r'] > var['donation_'||$donor])
                                 bounce('not enough funds, please refill');
                         }
@@ -136,7 +157,7 @@
 					{
 						app: 'state',
 						state: `{
-                            if(var[trigger.data.confirm||'_asset'] == 'base'){
+                            if(var[trigger.data.donate||'_asset'] == 'base'){
                                 var['donation_'||$donor] -= var[trigger.data.donate||'_amount_r'];
                             }
                             else{
