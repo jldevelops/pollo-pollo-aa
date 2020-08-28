@@ -5,7 +5,7 @@
     }`,
     init: `{
         $timespan = 60*60*24*30;
-        $year = 60*60*24*365;
+        $year = 24*60*60*365;
         if(trigger.output[[asset!=base]].asset != 'none'){
             $asset = trigger.output[[asset!=base]].asset;
             if($asset and $asset != $stableAsset()) 
@@ -18,7 +18,7 @@
 		cases: [
 			{
 				if: `{
-                    trigger.data.create and $polloAddr() == trigger.address
+                    trigger.data.action == 'create' and $polloAddr() == trigger.address
 				}`,
 				messages: [
 					{
@@ -36,7 +36,7 @@
 			},
             {
 				if: `{
-                    trigger.data.withdraw and $polloAddr() == trigger.address
+                    trigger.data.action == 'withdraw' and $polloAddr() == trigger.address
 				}`,
 				messages: [
 					{
@@ -55,19 +55,19 @@
 			},
             {
 				if: `{
-                    trigger.data.return and trigger.address == $polloAddr()
+                    trigger.data.action == 'return' and trigger.address == $polloAddr()
 				}`,
                 init: `{
-                        if(!var[trigger.data.return||'_producer'])
+                        if(!var[trigger.data.id||'_producer'])
                             bounce('application not found');
-                        if(!var[trigger.data.return||'_donor'])
+                        if(!var[trigger.data.id||'_donor'])
                             bounce('not filled');
-                        if(var[trigger.data.return||'_time']+$timespan < timestamp)
+                        if(var[trigger.data.id||'_time']+$timespan < timestamp)
                             bounce('donor must wait 30 days before return');
-                        if(var[trigger.data.return||'_time']+$year > timestamp){
+                        if(var[trigger.data.id||'_time']+$year > timestamp){
                             $to_aa = true;
                         }
-                        if(var[trigger.data.return||'_donor'] == $polloAddr())
+                        if(var[trigger.data.id||'_donor'] == $polloAddr())
                             $to_aa = true;
                 }`,
 				messages: [
@@ -75,11 +75,11 @@
                         if: `{!$to_aa}`,
                         "app": "payment",
                         "payload": {
-                            "asset": "{var[trigger.data.return||'_asset']}",
+                            "asset": "{var[trigger.data.id||'_asset']}",
                             "outputs": [
                                 {
                                     "address": "{trigger.data.addr}",
-                                    "amount": "{var[trigger.data.return||'_amount']}"
+                                    "amount": "{var[trigger.data.id||'_amount']}"
                                 }
                             ]
                         }
@@ -88,51 +88,51 @@
 						app: 'state',
 						state: `{
                             if(!$to_aa){
-                                if(var[trigger.data.return||'_asset'] == 'base'){
-                                    var['user_bytes'] -= var[trigger.data.return||'_amount'];
+                                if(var[trigger.data.id||'_asset'] == 'base'){
+                                    var['user_bytes'] -= var[trigger.data.id||'_amount'];
                                 }
                             }
                             else{
-                                if(var[trigger.data.return||'_asset'] == 'base'){
-                                    var['donation_'||var[trigger.data.return||'_donor']] -= var[trigger.data.return||'_amount'];
-                                    var['donation_'||$polloAddr()] += var[trigger.data.return||'_amount'];
+                                if(var[trigger.data.id||'_asset'] == 'base'){
+                                    var['donation_'||var[trigger.data.id||'_donor']] -= var[trigger.data.id||'_amount'];
+                                    var['donation_'||$polloAddr()] += var[trigger.data.id||'_amount'];
                                 }
                                 else{
-                                    var['donationsc_'||var[trigger.data.return||'_donor']] -= var[trigger.data.return||'_amount'];
-                                    var['donationsc_'||$polloAddr()] += var[trigger.data.return||'_amount'];
+                                    var['donationsc_'||var[trigger.data.id||'_donor']] -= var[trigger.data.id||'_amount'];
+                                    var['donationsc_'||$polloAddr()] += var[trigger.data.id||'_amount'];
                                 }
                             }
-							var[trigger.data.return||'_amount'] = false;
-                            var[trigger.data.return||'_producer'] = false;
-                            var[trigger.data.return||'_donor'] = false;
-                            var[trigger.data.return||'_time'] = false;
-                            var[trigger.data.return||'_asset'] = false;
+							var[trigger.data.id||'_amount'] = false;
+                            var[trigger.data.id||'_producer'] = false;
+                            var[trigger.data.id||'_donor'] = false;
+                            var[trigger.data.id||'_time'] = false;
+                            var[trigger.data.id||'_asset'] = false;
 						}`
 					}
 				]
 			},
             {
 				if: `{
-                    trigger.data.donate and $polloAddr() == trigger.address
+                    trigger.data.action == 'donate' and $polloAddr() == trigger.address
 				}`,
                 init: `{
                         
-                        if(!var[trigger.data.donate||'_amount_r']){
+                        if(!var[trigger.data.id||'_amount_r']){
                             bounce('application already filled');
                         }
                         $donor = trigger.data.donor;
                         if(!$donor)
                             bounce('donor missing');
-                        if(var[trigger.data.donate||'_asset'] == 'base' and !var['donation_'||$donor])
+                        if(var[trigger.data.id||'_asset'] == 'base' and !var['donation_'||$donor])
                             bounce('donor dont have funds to donate');
-                        if(var[trigger.data.donate||'_asset'] != 'base' and !var['donationsc_'||$donor])
+                        if(var[trigger.data.id||'_asset'] != 'base' and !var['donationsc_'||$donor])
                             bounce('donor dont have funds to donate');
-                        if(var[trigger.data.donate||'_asset'] == 'base'){
-                            if(var[trigger.data.donate||'_amount_r'] > var['donation_'||$donor])
+                        if(var[trigger.data.id||'_asset'] == 'base'){
+                            if(var[trigger.data.id||'_amount_r'] > var['donation_'||$donor])
                                 bounce('not enough funds, please refill');
                         }
                         else{
-                            if(var[trigger.data.donate||'_amount_r'] > var['donationsc_'||$donor])
+                            if(var[trigger.data.id||'_amount_r'] > var['donationsc_'||$donor])
                                 bounce('not enough funds, please refill');
                         }
                         
@@ -142,39 +142,39 @@
 					{
 						app: 'state',
 						state: `{
-                            if(var[trigger.data.donate||'_asset'] == 'base'){
-                                var['donation_'||$donor] -= var[trigger.data.donate||'_amount_r'];
+                            if(var[trigger.data.id||'_asset'] == 'base'){
+                                var['donation_'||$donor] -= var[trigger.data.id||'_amount_r'];
                             }
                             else{
-                                var['donationsc_'||$donor] -= var[trigger.data.donate||'_amount_r'];
+                                var['donationsc_'||$donor] -= var[trigger.data.id||'_amount_r'];
                             }
-                            var[trigger.data.donate||'_amount'] = var[trigger.data.donate||'_amount_r'];
-                            var[trigger.data.donate||'_amount_r'] = false;
-                            var[trigger.data.donate||'_donor'] = $donor;
-                            var[trigger.data.donate||'_time'] = timestamp;
+                            var[trigger.data.id||'_amount'] = var[trigger.data.id||'_amount_r'];
+                            var[trigger.data.id||'_amount_r'] = false;
+                            var[trigger.data.id||'_donor'] = $donor;
+                            var[trigger.data.id||'_time'] = timestamp;
 						}`
 					}
 				]
 			},
             {
 				if: `{
-                    trigger.data.confirm and $polloAddr() == trigger.address
+                    trigger.data.action == 'confirm' and $polloAddr() == trigger.address
 				}`,
                 init: `{
-                        if(!var[trigger.data.confirm||'_producer'])
+                        if(!var[trigger.data.id||'_producer'])
                             bounce('application not found');
-                        if(var[trigger.data.confirm||'_amount_r'])
+                        if(var[trigger.data.id||'_amount_r'])
                             bounce('not filled yet');
                 }`,
 				messages: [
                     {
                         "app": "payment",
                         "payload": {
-                            "asset": `{var[trigger.data.confirm||'_asset']}`,
+                            "asset": `{var[trigger.data.id||'_asset']}`,
                             "outputs": [
                                 {
-                                    "address": "{var[trigger.data.confirm||'_producer']}",
-                                    "amount": "{var[trigger.data.confirm||'_amount']}"
+                                    "address": "{var[trigger.data.id||'_producer']}",
+                                    "amount": "{var[trigger.data.id||'_amount']}"
                                 }
                             ]
                         }
@@ -182,13 +182,13 @@
 					{
 						app: 'state',
 						state: `{
-                            if(var[trigger.data.confirm||'_asset'] == 'base')
-                                var['user_bytes'] -=  var[trigger.data.confirm||'_amount'];
-                            var[trigger.data.confirm||'_asset'] = false;
-							var[trigger.data.confirm||'_amount'] = false;
-                            var[trigger.data.confirm||'_amount_r'] = false;
-                            var[trigger.data.confirm||'_producer'] = false;
-                            var[trigger.data.confirm||'_time'] = false;
+                            if(var[trigger.data.id||'_asset'] == 'base')
+                                var['user_bytes'] -=  var[trigger.data.id||'_amount'];
+                            var[trigger.data.id||'_asset'] = false;
+							var[trigger.data.id||'_amount'] = false;
+                            var[trigger.data.id||'_amount_r'] = false;
+                            var[trigger.data.id||'_producer'] = false;
+                            var[trigger.data.id||'_time'] = false;
 						}`
 					}
 				]
