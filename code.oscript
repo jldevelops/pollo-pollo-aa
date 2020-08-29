@@ -31,6 +31,8 @@
                                 var[trigger.unit||'_asset'] = $stableAsset();
                             else
                                 var[trigger.unit||'_asset'] = 'base';
+                            response['action'] = $act();
+                            response['id'] = trigger.unit;
 						}`
 					}
 				]
@@ -52,6 +54,8 @@
                             var[trigger.data.id||'_producer'] = false;
                             var[trigger.data.id||'_amount_r'] = false;
                             var[trigger.data.id||'_asset'] = false;
+                            response['action'] = $act();
+                            response['id'] = trigger.data.id;
 						}`
 					}
 				]
@@ -68,10 +72,16 @@
                             "outputs": [
                                 {
                                     "address": "{trigger.address}",
-                                    "amount": "{balance[base] - storage_size - var['user_bytes'] - 20000}"
+                                    "amount": "{balance[base] - storage_size - var['user_bytes'] - 10000}"
                                 }
                             ]
                         }
+                    },
+                    {
+                        app:'state',
+                        state:`{
+                            response['action'] = $act();
+                        }`
                     }
 				]
 			},
@@ -86,10 +96,7 @@
                             bounce('not filled');
                         if(var[trigger.data.id||'_time']+$timespan < timestamp)
                             bounce('donor must wait 30 days before return');
-                        if(var[trigger.data.id||'_time']+$year > timestamp){
-                            $to_aa = true;
-                        }
-                        if(var[trigger.data.id||'_donor'] == $polloAddr())
+                        if(var[trigger.data.id||'_time']+$year > timestamp OR var[trigger.data.id||'_donor'] == $polloAddr())
                             $to_aa = true;
                 }`,
 				messages: [
@@ -129,6 +136,9 @@
                             var[trigger.data.id||'_donor'] = false;
                             var[trigger.data.id||'_time'] = false;
                             var[trigger.data.id||'_asset'] = false;
+                            response['action'] = $act();
+                            response['id'] = trigger.data.id;
+                            response['addr'] = trigger.data.addr;
 						}`
 					}
 				]
@@ -174,6 +184,9 @@
                             var[trigger.data.id||'_amount_r'] = false;
                             var[trigger.data.id||'_donor'] = $donor;
                             var[trigger.data.id||'_time'] = timestamp;
+                            response['action'] = $act();
+                            response['id'] = trigger.data.id;
+                            response['donor'] = trigger.data.donor;
 						}`
 					}
 				]
@@ -211,6 +224,8 @@
                             var[trigger.data.id||'_amount_r'] = false;
                             var[trigger.data.id||'_producer'] = false;
                             var[trigger.data.id||'_time'] = false;
+                            response['action'] = $act();
+                            response['id'] = trigger.data.id;
 						}`
 					}
 				]
@@ -245,6 +260,9 @@
                         else{
                             var['donationsc_'||$donor] += trigger.output[[asset!=base]];
                         }
+                        response['action'] = 'deposit';
+                        response['asset'] = $asset;
+                        response['donor'] = $donor;
 					}`
 				}]
 			}
