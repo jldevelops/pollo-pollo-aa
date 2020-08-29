@@ -1,6 +1,8 @@
 # pollo-pollo-aa
 AA to hold pollo pollo donated funds
 
+https://testnetexplorer.obyte.org/#4a2VTBsJz94OLG5kio/+jzzPgO5p76y0AiwUnuN/KTc=
+
 usage with `action` param, values:
 
 `create` creates app (`producer`,`amount`,`stable`=1 if stable)
