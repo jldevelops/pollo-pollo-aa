@@ -1,7 +1,7 @@
 # pollo-pollo-aa
 AA to hold pollo pollo donated funds
 
-https://testnetexplorer.obyte.org/#4a2VTBsJz94OLG5kio/+jzzPgO5p76y0AiwUnuN/KTc=
+https://testnetexplorer.obyte.org/#kVg21cCnO5RWN5oktEiOxnBYNSf1H9IJR6mD8ldgX9Q=
 
 usage with `action` param, values:
 
