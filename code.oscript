@@ -33,6 +33,8 @@
                                 var[trigger.unit||'_asset'] = 'base';
                             response['action'] = $act();
                             response['id'] = trigger.unit;
+                            response['producer'] = trigger.data.producer;
+                            response['amount'] = trigger.data.amount;
 						}`
 					}
 				]
@@ -138,7 +140,8 @@
                             var[trigger.data.id||'_asset'] = false;
                             response['action'] = $act();
                             response['id'] = trigger.data.id;
-                            response['addr'] = trigger.data.addr;
+                            if(trigger.data.addr)
+                                response['addr'] = trigger.data.addr;
 						}`
 					}
 				]
@@ -232,9 +235,7 @@
 			},
 			{ 
                 init: `{
-                    $donor = trigger.data.donor;
-                    if(!trigger.data.donor)
-                        bounce('donor param not found');
+                    $donor = trigger.data.donor OTHERWISE $polloAddr();
                 }`,
 				messages: [
                     {
