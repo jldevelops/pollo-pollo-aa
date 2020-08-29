@@ -33,6 +33,7 @@
                                 var[trigger.unit||'_asset'] = 'base';
                             response['action'] = $act();
                             response['id'] = trigger.unit;
+                            response['asset'] = var[trigger.unit||'_asset'];
                             response['producer'] = trigger.data.producer;
                             response['amount'] = trigger.data.amount;
 						}`
@@ -227,6 +228,7 @@
                             var[trigger.data.id||'_amount_r'] = false;
                             var[trigger.data.id||'_producer'] = false;
                             var[trigger.data.id||'_time'] = false;
+                            var[trigger.data.id||'_donor'] = false;
                             response['action'] = $act();
                             response['id'] = trigger.data.id;
 						}`
