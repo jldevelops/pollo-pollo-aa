@@ -5,7 +5,7 @@ https://testnetexplorer.obyte.org/#kVg21cCnO5RWN5oktEiOxnBYNSf1H9IJR6mD8ldgX9Q=
 
 usage with `action` param, values:
 
-`create` creates app (`producer`,`amount`,`stable`=1 if stable)
+`create` creates app (`producer`,`amount`,`stable`=1 if stable) appid = trigger unit id
 
 `withdraw` withdraws leftover bytes
 
