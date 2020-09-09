@@ -2,6 +2,8 @@
     getters: `{
         $polloAddr = => '5TT7JV3M5PNE2WSAA3YGOX7ZZXKIMG35';
         $stableAsset = => 'blao';
+        $donorBytes = $donor => var['acctb_'||$donor];
+        $donorStable = $donor => var['accts_'||$donor];
     }`,
     init: `{
         $act= => trigger.data.action otherwise 'b';
@@ -14,6 +16,8 @@
         }
         else
             $asset = 'base';
+        if($asset AND trigger.output[[asset=base]] < 10000)
+            bounce('not allowed');
     }`,
 	messages: {
 		cases: [
@@ -126,12 +130,12 @@
                             }
                             else{
                                 if(var[trigger.data.id||'_asset'] == 'base'){
-                                    var['donation_'||var[trigger.data.id||'_donor']] -= var[trigger.data.id||'_amount'];
-                                    var['donation_'||$polloAddr()] += var[trigger.data.id||'_amount'];
+                                    var['acctb_'||var[trigger.data.id||'_donor']] -= var[trigger.data.id||'_amount'];
+                                    var['acctb_'||$polloAddr()] += var[trigger.data.id||'_amount'];
                                 }
                                 else{
-                                    var['donationsc_'||var[trigger.data.id||'_donor']] -= var[trigger.data.id||'_amount'];
-                                    var['donationsc_'||$polloAddr()] += var[trigger.data.id||'_amount'];
+                                    var['accts_'||var[trigger.data.id||'_donor']] -= var[trigger.data.id||'_amount'];
+                                    var['accts_'||$polloAddr()] += var[trigger.data.id||'_amount'];
                                 }
                             }
 							var[trigger.data.id||'_amount'] = false;
@@ -159,16 +163,16 @@
                         $donor = trigger.data.donor;
                         if(!$donor)
                             bounce('donor missing');
-                        if(var[trigger.data.id||'_asset'] == 'base' and !var['donation_'||$donor])
+                        if(var[trigger.data.id||'_asset'] == 'base' and !var['acctb_'||$donor])
                             bounce('donor dont have funds to donate');
-                        if(var[trigger.data.id||'_asset'] != 'base' and !var['donationsc_'||$donor])
+                        if(var[trigger.data.id||'_asset'] != 'base' and !var['accts_'||$donor])
                             bounce('donor dont have funds to donate');
                         if(var[trigger.data.id||'_asset'] == 'base'){
-                            if(var[trigger.data.id||'_amount_r'] > var['donation_'||$donor])
+                            if(var[trigger.data.id||'_amount_r'] > var['acctb_'||$donor])
                                 bounce('not enough funds, please refill');
                         }
                         else{
-                            if(var[trigger.data.id||'_amount_r'] > var['donationsc_'||$donor])
+                            if(var[trigger.data.id||'_amount_r'] > var['accts_'||$donor])
                                 bounce('not enough funds, please refill');
                         }
                         
@@ -179,10 +183,10 @@
 						app: 'state',
 						state: `{
                             if(var[trigger.data.id||'_asset'] == 'base'){
-                                var['donation_'||$donor] -= var[trigger.data.id||'_amount_r'];
+                                var['acctb_'||$donor] -= var[trigger.data.id||'_amount_r'];
                             }
                             else{
-                                var['donationsc_'||$donor] -= var[trigger.data.id||'_amount_r'];
+                                var['accts_'||$donor] -= var[trigger.data.id||'_amount_r'];
                             }
                             var[trigger.data.id||'_amount'] = var[trigger.data.id||'_amount_r'];
                             var[trigger.data.id||'_amount_r'] = false;
@@ -237,7 +241,7 @@
 			},
 			{ 
                 init: `{
-                    $donor = trigger.data.donor OTHERWISE $polloAddr();
+                    $donor = trigger.data.donor OTHERWISE trigger.address;
                 }`,
 				messages: [
                     {
@@ -257,15 +261,16 @@
 					app: 'state',
 					state: `{
                         if($asset == 'base'){
-                            var['donation_'||$donor] += trigger.output[[asset=base]];
+                            var['acctb_'||$donor] += trigger.output[[asset=base]];
                             var['user_bytes'] += trigger.output[[asset=base]];
                         }
                         else{
-                            var['donationsc_'||$donor] += trigger.output[[asset!=base]];
+                            var['accts_'||$donor] += trigger.output[[asset!=base]];
                         }
                         response['action'] = 'deposit';
                         response['asset'] = $asset;
                         response['donor'] = $donor;
+                        response['address'] = trigger.address;
 					}`
 				}]
 			}
